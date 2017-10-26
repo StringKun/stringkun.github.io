@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title></title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+
+	<body>
+		<script src="build/three.js"></script>
+		<script src="build/TrackballControls.js"></script>
+
+<script>
+	var container;
+
+	var camera, scene, renderer;
+
+	var earth, earth_cloud;
+    var controls;
+	var directionalLight;
+
+    var sprite_arr = [];
+	var raycaster;
+    var mouse = new THREE.Vector2();
+    var pre_mouse = new THREE.Vector2();
+    var is_click = false;
+    var is_move = false;
+    var id;
+    var arr_click = [];
+	init();
+	animate();
+
+
+	function init() {
+
+		container = document.createElement( 'div' );
+		document.body.appendChild( container );
+//
+		camera = new THREE.PerspectiveCamera( 45, window.innerWidth/window.innerHeight, 1, 1000 );
+
+		camera.position.z = 30;
+
+        controls = new THREE.TrackballControls( camera );
+
+
+        controls.rotateSpeed = 0.0;
+        controls.zoomSpeed = 0.5;
+        controls.panSpeed = 0;
+
+        controls.noZoom = false;
+        controls.noPan = false;
+
+        controls.staticMoving = false;
+        controls.dynamicDampingFactor = 0.3;
+
+        raycaster = new THREE.Raycaster();
+		// scene
+
+		scene = new THREE.Scene();
+
+		var ambient = new THREE.AmbientLight( 0x101030 );
+		scene.add( ambient );
+
+		directionalLight = new THREE.DirectionalLight( 0xffeedd );
+        directionalLight.position.set( -2, 0, 1 );
+		scene.add( directionalLight );
+
+		//start();
+		//canvas
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        canvas.width  = 1024;
+        canvas.height = 1024;
+        context.fillStyle="#000000";
+        context.fillRect(0,0,1000,1000);
+
+        var tex = new THREE.Texture( canvas);
+        tex.needsUpdate = true;
+
+        var geometry = new THREE.PlaneGeometry( 1000, 1000, 32 );
+        var material = new THREE.MeshBasicMaterial( {
+            map: tex
+        } );
+        var plane = new THREE.Mesh( geometry, material );
+        plane.position.set(0,0,-500);
+        scene.add( plane );
+
+        var sphere =  new THREE.SphereBufferGeometry( 5, 32, 32 );
+
+        var loader = new THREE.TextureLoader();
+        loader.load(
+            'pic/earth.jpg',
+            function ( texture ) {
+                var material = new THREE.MeshPhongMaterial( {
+                    map: texture
+                } );
+                earth = new THREE.Mesh( sphere, material );
+                scene.add( earth );
+                loader.load('pic/earth_bump.jpg',
+					function (texture) {
+						earth.bumpmap = texture;
+                    }	);
+                initSpr();
+            }
+        );
+
+        var sphere2 =  new THREE.SphereBufferGeometry( 5.1, 32, 32 );
+
+        loader.load(
+            'pic/earth_cloud.png',
+            function ( texture ) {
+                var material = new THREE.MeshLambertMaterial( {
+                    map: texture
+                } );
+               earth_cloud = new THREE.Mesh( sphere2, material );
+                scene.add( earth_cloud );
+                earth_cloud.material.transparent = true;
+            }
+        );
+
+
+		renderer = new THREE.WebGLRenderer();
+		renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+		container.appendChild( renderer.domElement );
+		document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+        document.addEventListener( 'touchstart',onDocumentMouseDown , false );
+        document.addEventListener( 'touchmove',onDocumentTouchMove , false );
+        document.addEventListener( 'touchend', onDocumentMouseUp, false );
+		window.addEventListener( 'resize', onWindowResize, false );
+
+	}
+
+	function onWindowResize() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        controls.handleResize();
+	}
+
+    function onDocumentMouseDown( event ) {
+        is_click = true;
+        is_move = false;
+		//适配手机
+		if(event.touches){
+            mouse.x = (event.touches[ 0 ].pageX /  window.innerWidth) * 2 -1;
+            mouse.y = -(event.touches[ 0 ].pageY / window.innerHeight) *2 +1;
+            pre_mouse.x = mouse.x;
+            pre_mouse.y = mouse.y;
+		}
+    }
+
+    function onDocumentMouseUp( event ) {
+        is_click = false;
+        if(!is_move){
+            switch (id){
+                case 0:
+                    alert(id);
+                    break;
+                case 1:
+                    alert(id);
+                    break;
+                case 2:
+                    alert(id);
+                    break;
+                case 3:
+                    alert(id);
+                    break;
+                case 4:
+                    alert(id);
+                    break;
+            }
+            id = undefined;
+            is_move = true;
+		}
+    }
+
+
+
+	function onDocumentMouseMove( event ) {
+        is_move = true;
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        if(is_click){
+            if(earth && earth_cloud){
+                earth.rotation.set(earth.rotation.x - (mouse.y - pre_mouse.y), earth.rotation.y + (mouse.x - pre_mouse.x), earth.rotation.z);
+                earth_cloud.rotation.set(earth_cloud.rotation.x - (mouse.y - pre_mouse.y), earth_cloud.rotation.y + (mouse.x - pre_mouse.x), earth_cloud.rotation.z);
+            }
+		}
+        pre_mouse.x = mouse.x;
+        pre_mouse.y = mouse.y;
+	}
+    function onDocumentTouchMove() {
+        is_move = true;
+        mouse.x = (event.touches[ 0 ].pageX /  window.innerWidth) * 2 -1;
+        mouse.y = -(event.touches[ 0 ].pageY / window.innerHeight) *2 +1;
+        if(is_click){
+
+            if(earth && earth_cloud){
+                earth.rotation.set(earth.rotation.x - (mouse.y - pre_mouse.y), earth.rotation.y + (mouse.x - pre_mouse.x), earth.rotation.z);
+                earth_cloud.rotation.set(earth_cloud.rotation.x - (mouse.y - pre_mouse.y), earth_cloud.rotation.y + (mouse.x - pre_mouse.x), earth_cloud.rotation.z);
+            }
+        }
+        pre_mouse.x = mouse.x;
+        pre_mouse.y = mouse.y;
+        console.log("!@#",mouse.x - pre_mouse.x);
+	}
+
+
+	function animate() {
+
+		requestAnimationFrame( animate );
+		render();
+	}
+
+	function render() {
+
+		camera.lookAt( scene.position );
+		renderer.render( scene, camera );
+        controls.update();
+
+
+        raycaster.setFromCamera( mouse, camera );
+
+		if(earth){
+            var intersects = raycaster.intersectObjects( arr_click );
+            if(is_click && intersects[0]){
+                  id =  intersects[ 0 ].object.sid;
+                  console.log("!!", intersects);
+            }
+		}
+		if(!is_click && earth && earth_cloud){
+            earth.rotation.set(earth.rotation.x, earth.rotation.y+0.003, earth.rotation.z);
+            earth_cloud.rotation.set(earth_cloud.rotation.x, earth_cloud.rotation.y+0.003, earth_cloud.rotation.z);
+		}
+	}
+
+	function initSpr() {
+        //标志板
+        var spriteMap;
+        var spriteMaterial;
+        var sprite;
+
+         spriteMap = new THREE.TextureLoader().load( "pic/i_antarctica.png" );
+         spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff} );
+         sprite = new THREE.Sprite( spriteMaterial );
+        sprite.position.set(-0.05,-5.3,0.26);
+        sprite.sid = 0;
+        sprite_arr.push(sprite);
+        scene.add( sprite );
+        earth.add(sprite);
+
+        //标志板
+         spriteMap = new THREE.TextureLoader().load( "pic/i_greenland.png" );
+         spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff} );
+         sprite = new THREE.Sprite( spriteMaterial );
+        sprite.position.set(-0.034,5.1,1.39);
+        sprite.sid = 1;
+        sprite_arr.push(sprite);
+        scene.add( sprite );
+        earth.add(sprite);
+
+
+        spriteMap = new THREE.TextureLoader().load( "pic/i_galapagos.png" );
+        spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff} );
+        sprite = new THREE.Sprite( spriteMaterial );
+        sprite.position.set(0.1,0.16,5.3);
+        sprite.sid = 2;
+        sprite_arr.push(sprite);
+        scene.add( sprite );
+        earth.add(sprite);
+
+        spriteMap = new THREE.TextureLoader().load( "pic/i_mariana.png" );
+        spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff} );
+        sprite = new THREE.Sprite( spriteMaterial );
+        sprite.position.set(-3.64,2.7,-3.18);
+        sprite.sid = 3;
+        sprite_arr.push(sprite);
+        scene.add( sprite );
+        earth.add(sprite);
+
+        spriteMap = new THREE.TextureLoader().load( "pic/i_namibia.png" );
+        spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff} );
+        sprite = new THREE.Sprite( spriteMaterial );
+        sprite.position.set(4.81, -1.1, -2.6);
+        sprite.sid = 4;
+        sprite_arr.push(sprite);
+        scene.add( sprite );
+        earth.add(sprite);
+
+        arr_click.push(earth.children[0]);
+        arr_click.push(earth.children[1]);
+        arr_click.push(earth.children[2]);
+        arr_click.push(earth.children[3]);
+        arr_click.push(earth.children[4]);
+        arr_click.push(earth);
+    }
+
+</script>
+
+	</body>
+</html>
