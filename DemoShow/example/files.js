@@ -14,7 +14,8 @@ var files = {
         "potcloud3",
         "panorama",
         "toonshader1",
-        "toonshader2"
+        "toonshader2",
+		"blur"
 	]
 
 };
